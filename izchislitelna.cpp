@@ -122,7 +122,25 @@ void print_protein (string s, string t) {
 	int pos = MAX_SIZE/2;
 	int size = (int)s.length();
 	int j = 0;
-	for (int i = 0; i < (int)s.length(); i++) {
+  int starting_zeros = 0;
+  if (s[startng_zeros] == '0' || s[starting_zeros] == '-') {
+    while (s[starting_zeros] == '0' || s[starting_zeros] == '-') {
+      if (t[starting_zeros] == '0') {
+        lattice[pos][j] = t[starting_zeros];
+      }
+      if (s[starting_zeros]) {
+        lattice[pos+2][j] = s[starting_zeros];
+      }
+      if (s[i+1] && t[i+1] && s[i+1] != '-' && t[i+1] != '-') {
+        lattice[pos][j+1] = '-';
+        lattice[pos+2][j+1] = '-';
+        j++;
+      }
+      j++;
+      starting_zeros++;
+    }
+  }
+	for (int i = starting_zeros; i < (int)s.length(); i++) {
 		if (s[i] != '-' && t[i] != '-') {
 			lattice[pos][j] = t[i];
 			lattice[pos+2][j] = s[i];
@@ -186,20 +204,20 @@ string reverse(string s) {
 	return reversed;
 }
 
+void alignment(string s_org, string t_org, string &s_aln, string &t_aln) {
+  int s_starting_zeros =0;
+  while (s_org[s_starting_zeros] == '0') {
+    s_starting_zeros++;
+  }
+  string s = s_org.substr((size_t)s_starting_zeros, s_org.length());
+  int t_starting_zeros = 0;
+  while (t_org[t_starting_zeros] == '0') {
+    t_starting_zeros++;
+  }
+  string t = t_org.substr((size_t)t_starting_zeros, t_org.length());
 
-int main(){
-	//string str = "0100101001110101000010";
-	string str = "011010011001010100000010";
-	int folding_point_pos = folding_point(str);
-	string t = str.substr(0, (size_t)folding_point_pos);
-	string right = str.substr((size_t)folding_point_pos, str.length());
-	string s = reverse(right);
-  cout<<t<<endl;
-  cout<<s<<endl;
-	int n = (int)s.length();
+  int n = (int)s.length();
 	int m = (int)t.length();
-	string t_aln;
-	string s_aln;
 	int D[MAX_SIZE][MAX_SIZE];
 	memset(D, 0, sizeof(D));
 	D[1][1] = 0;
@@ -210,7 +228,7 @@ int main(){
 
 	for (int j=1; j<=m; j++) {
 	  D[j+1][1] = gap_score*j;
-	}	
+	}
 
 	for (int i = 2; i <= m+1; i++) {
 		for (int j = 2; j<= n+1; j++) {
@@ -252,16 +270,16 @@ int main(){
 			s_aln = s[j-3] + s_aln;
 			t_aln = "--" + t_aln;
 			j = j-2;
-		} 
+		}
 	}
 
-	if (j > 1) {  
+	if (j > 1) {
 		while (j > 1) {
 			s_aln = s[j-2] + s_aln;
 			t_aln = '-' + t_aln;
 			j = j-1;
 		}
-	} else if (i > 1) { 
+	} else if (i > 1) {
 		while (i > 1) {
 			s_aln = '-' + s_aln;
 			t_aln = t[i-2] + t_aln;
@@ -304,14 +322,49 @@ int main(){
 			}
 		}
 	}
- 
+
 	/*for (int i=1; i<=m+1; i++) {
 		for(int j=1; j<=n+1; j++) {
 			cout<<D[i][j]<<" ";
 		}
 		cout<<"\n";
 	}*/
+  if (s_starting_zeros >= t_starting_zeros) {
+    for (int i=0; i<t_starting_zeros; i++) {
+      s_aln = "0" + s_aln;
+      t_aln = "0" + t_aln;
+    }
+    int diff = s_starting_zeros - t_starting_zeros;
+    for (int i=0; i<diff; i++) {
+      s_aln = "0" + s_aln;
+      t_aln = "-" + t_aln;
+    }
+  } else {
+    for (int i=0; i<s_starting_zeros; i++) {
+      s_aln = "0" + s_aln;
+      t_aln = "0" + t_aln;
+    }
+    int diff = t_starting_zeros - s_starting_zeros;
+    for (int i=0; i<diff; i++) {
+      t_aln = "0" + t_aln;
+      s_aln = "-" + s_aln;
+    }
+  }
+}
 
+
+int main(){
+	//string str = "0100101001110101000010";
+	string str = "00001101001100101010000001";
+	int folding_point_pos = folding_point(str);
+	string t = str.substr(0, (size_t)folding_point_pos);
+	string right = str.substr((size_t)folding_point_pos, str.length());
+	string s = reverse(right);
+	string t_aln;
+	string s_aln;
+  cout<<t<<endl;
+  cout<<s<<endl;
+  alignment(s, t, s_aln, t_aln);
 	cout<<t_aln<<endl;
 	cout<<s_aln<<endl;
 	print_protein (s_aln, t_aln);
