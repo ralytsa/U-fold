@@ -38,6 +38,44 @@ int count_ones(string s) {
   return count;
 }
 
+int** blocks_labeling(string blocks[], int bi[], int bi_size, int &x_iter, int &y_iter) {
+  int count_even = 0;
+  int count_odd = 0;
+  int** labels;
+  
+  for (int i=0; i<bi_size; i++) {
+    if (i%2 == 0) {
+      count_even += count_ones(blocks[bi[i]]);
+    } else {
+     count_odd += count_ones(blocks[bi[i]]);
+    }
+  }
+cout<<count_even<<"-----"<<count_odd<<endl;
+  /*if (count_even <= count_odd) {
+    for (int i=0; i<bi_size; i++) {
+      if (i%2 == 0) {
+        labels[0][x_iter] = bi[i];
+        x_iter++;
+      } else {
+        labels[1][y_iter] = bi[i];
+        y_iter++;
+      }
+    }
+  } else {
+    for (int i=0; i<bi_size; i++) {
+      if (i%2 == 0) {
+        labels[1][y_iter] = bi[i];
+        y_iter++;
+      } else {
+        labels[0][x_iter] = bi[i];
+        x_iter++;
+      }
+    }
+  }*/
+  
+  return labels;
+}
+
 // Returns the difference 1's in the two sets.
 // The number of 1's in the two sets must be almost equal.
 int folding_point_set_difference(string blocks[], int size, int pos) {
@@ -67,9 +105,11 @@ int folding_point(string str) {
   }
 
   string blocks[MAX_SIZE];
+  int bi[MAX_SIZE]; // holds the positions of blocks of type b_i
+  int bi_iter = 0;
   int j = 0;
   int iter = 0; // the position of the next block in blocks
-
+  // Select z_0 if the string starts with 0.
   if (hidrophobic_arr[0] > 0) {
     blocks[iter] = str.substr(0, hidrophobic_arr[0]);
     iter++;
@@ -84,13 +124,18 @@ int folding_point(string str) {
       }
       int end = hidrophobic_arr[j];
       blocks[iter] = str.substr(start, end-start+1);
+      bi[bi_iter] = iter;
+      bi_iter++;
       iter++;
       one = false;
     } else {
       if (one) {
         blocks[iter] = "1";
+        bi[bi_iter] = iter;
+        bi_iter++;
         iter++;
       }
+      // Here we have only blocks of 0's
       if (j < (int)str.length()-1) {
         blocks[iter] = str.substr(hidrophobic_arr[j]+1, hidrophobic_arr[j+1] - hidrophobic_arr[j] - 1); // blokut moje da e prazen, t.e. niama nuli v nego
         iter++;
@@ -102,12 +147,38 @@ int folding_point(string str) {
 
   if (one) {
     blocks[iter] = "1";
+    bi[bi_iter] = iter;
+    bi_iter++;
     iter++;
   }
 
+  // Select the last block of 0's (if some)
   if (j < (int)str.length()-1) {
     blocks[iter] = str.substr(hidrophobic_arr[j]+1, str.length() - j);
   }
+
+  for (int i=0; i<=iter; i++) {
+    cout<<blocks[i]<<endl;
+  }
+
+  for(int i = 0; i<bi_iter; i++) {
+    cout<<bi[i]<<endl;
+  }
+
+  int x[MAX_SIZE];
+  int y[MAX_SIZE];
+  int x_iter = 0;
+  int y_iter = 0;
+
+  int** labels = blocks_labeling(blocks, bi, bi_iter, x_iter, y_iter);
+
+  /*for (int i=0; i<x_iter; i++) {
+    cout<<labels[0][i]<<endl;
+  }
+ 
+  for (int i=0; i<y_iter; i++) {
+    cout<<labels[1][i]<<endl;
+  }*/
 
   int left_length = 0;
   for (int i = 0; i <= iter; i++) {
@@ -443,4 +514,6 @@ int main(){
   cout<<t_aln<<endl;
   cout<<s_aln<<endl;
   print_protein (s_aln, t_aln);
+
+  return 0;
 }
