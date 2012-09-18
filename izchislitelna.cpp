@@ -3,6 +3,8 @@
 #include <string>
 #include <hash_map>
 #include <cstring>
+#include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -38,10 +40,25 @@ int count_ones(string s) {
   return count;
 }
 
-int** blocks_labeling(string blocks[], int bi[], int bi_size, int &x_iter, int &y_iter) {
+int count_ones_y(string blocks[], vector<int> y, int pos) {
+	int count = 0;
+	for (int i=0; i<=pos; i++) {
+		count += count_ones(blocks[y[i]]);
+	}
+	return count;
+}
+
+int count_ones_x(string blocks[], vector<int> x, int pos) {
+	int count = 0;
+	for (int i=pos; i< (int)x.size(); i++) {
+		count += count_ones(blocks[x[i]]);
+	}
+	return count;
+}
+
+void blocks_labeling(string blocks[], int bi[], int bi_size, vector<int> &x,  vector<int> &y) {
   int count_even = 0;
   int count_odd = 0;
-  int** labels;
   
   for (int i=0; i<bi_size; i++) {
     if (i%2 == 0) {
@@ -50,46 +67,25 @@ int** blocks_labeling(string blocks[], int bi[], int bi_size, int &x_iter, int &
      count_odd += count_ones(blocks[bi[i]]);
     }
   }
-cout<<count_even<<"-----"<<count_odd<<endl;
-  /*if (count_even <= count_odd) {
+  if (count_even <= count_odd) {
     for (int i=0; i<bi_size; i++) {
       if (i%2 == 0) {
-        labels[0][x_iter] = bi[i];
-        x_iter++;
+				x.push_back(bi[i]);
       } else {
-        labels[1][y_iter] = bi[i];
-        y_iter++;
+        y.push_back(bi[i]);
       }
     }
   } else {
     for (int i=0; i<bi_size; i++) {
       if (i%2 == 0) {
-        labels[1][y_iter] = bi[i];
-        y_iter++;
+        y.push_back(bi[i]);
       } else {
-        labels[0][x_iter] = bi[i];
-        x_iter++;
+        x.push_back(bi[i]);
       }
     }
-  }*/
+  }
   
-  return labels;
-}
-
-// Returns the difference 1's in the two sets.
-// The number of 1's in the two sets must be almost equal.
-int folding_point_set_difference(string blocks[], int size, int pos) {
-  int left_count_ones = 0;
-  int right_count_ones = 0;
-
-  for (int i=0; i<=pos; i++) {
-    left_count_ones += count_ones(blocks[i]);
-  }
-  for(int i=pos+1; i<size; i++) {
-    right_count_ones += count_ones(blocks[i]);
-  }
-
-  return right_count_ones - left_count_ones;
+  return;
 }
 
 // Finds the folding point of the protein.
@@ -103,7 +99,10 @@ int folding_point(string str) {
       pos++;
     }
   }
-
+	/* We split the string into blocks. Each block b_i have the form b_i = 1 ot b_i = 1z_01...z_h1, where z_k, 0<=k<=h, is a string 
+	 * consisting of only 0 of odd length and h>=1. Then we decompose the string into z_0b_1z_1...b_hz_h, where z_l, 1<=l<=h, is a 
+	 * string consisting of only 0 of even length anz z_0 may consist of even or odd length. 
+	 */
   string blocks[MAX_SIZE];
   int bi[MAX_SIZE]; // holds the positions of blocks of type b_i
   int bi_iter = 0;
@@ -157,30 +156,38 @@ int folding_point(string str) {
     blocks[iter] = str.substr(hidrophobic_arr[j]+1, str.length() - j);
   }
 
-  for (int i=0; i<=iter; i++) {
-    cout<<blocks[i]<<endl;
-  }
+  vector<int> x;
+	vector<int> y;
 
-  for(int i = 0; i<bi_iter; i++) {
-    cout<<bi[i]<<endl;
-  }
+  blocks_labeling(blocks, bi, bi_iter, x, y);
+	vector<int>::iterator block_pos;
+	for (int i=0; i<iter; i++) {
+		if ((block_pos = find(y.begin(), y.end(), bi[i])) != y.end()) {
+			int y_pos = block_pos - y.begin();
+			cout<<"y_pos="<<y_pos<<endl;
+			int count_y = count_ones_y(blocks, y, y_pos);
+			if (y_pos < (int)x.size()) {
+				int count_x = count_ones_x(blocks, x, y_pos);
+				int min_ones = min(count_x, count_y);
+				cout<<count_y<<"   "<<count_x<<"  "<<min_ones<<endl;
+			}
+		} else if ((block_pos = find(x.begin(), x.end(), bi[i])) != x.end()) {
+			int x_pos = block_pos - x.begin();
+			if (x_pos != 0) {
+				cout<<"x_pos="<<x_pos<<endl;
+				int count_x = count_ones_x(blocks, x, x_pos+1);
+				if (x_pos < (int)x.size()) {
+					int count_y = count_ones_y(blocks, y, x_pos+1);
+					int min_ones = min(count_x, count_y);
+					cout<<count_y<<"  "<<count_x<<"  "<<min_ones<<endl;
+				}
+			}
+		} else {
+			i++; // the block is formed by only 0's
+		}
+	}
 
-  int x[MAX_SIZE];
-  int y[MAX_SIZE];
-  int x_iter = 0;
-  int y_iter = 0;
-
-  int** labels = blocks_labeling(blocks, bi, bi_iter, x_iter, y_iter);
-
-  /*for (int i=0; i<x_iter; i++) {
-    cout<<labels[0][i]<<endl;
-  }
- 
-  for (int i=0; i<y_iter; i++) {
-    cout<<labels[1][i]<<endl;
-  }*/
-
-  int left_length = 0;
+  /*int left_length = 0;
   for (int i = 0; i <= iter; i++) {
     if ((int)blocks[i].length() > 0) {
       int distance = folding_point_set_difference(blocks, iter+1, i);
@@ -195,7 +202,7 @@ int folding_point(string str) {
         }
       }
     }
-  }
+  }*/
 
   return 0;
 }
@@ -229,7 +236,7 @@ void print_protein (string s, string t) {
   int s_ending_gaps = 0 ;
   int t_ending_gaps = 0;
   if (s[s.length()-1] == '-') {
-  int gap_pos = s.length() - 1;
+  int gap_pos = (int)s.length() - 1;
   while (s[gap_pos] == '-') {
     s_ending_gaps++;
     gap_pos--;
@@ -237,7 +244,7 @@ void print_protein (string s, string t) {
   }
 
   if (t[s.length()-1] == '-') {
-    int gap_pos = t.length()-1;
+    int gap_pos = (int)t.length()-1;
     while (t[gap_pos] == '-') {
       t_ending_gaps++;
       gap_pos--;
@@ -503,7 +510,8 @@ int main(){
   //string str = "010010000001000110101000101100000010000100000000010"; 
   string str = "11100010100001000000100101010000010";
   int folding_point_pos = folding_point(str);
-  string t = str.substr(0, (size_t)folding_point_pos);
+	cout<<folding_point_pos<<endl;
+  /*string t = str.substr(0, (size_t)folding_point_pos);
   string right = str.substr((size_t)folding_point_pos, str.length());
   string s = reverse(right);
   string t_aln;
@@ -511,9 +519,9 @@ int main(){
   cout<<t<<endl;
   cout<<s<<endl;
   alignment(s, t, s_aln, t_aln);
-  cout<<t_aln<<endl;
+  cout<<t_aln<<endl;u
   cout<<s_aln<<endl;
-  print_protein (s_aln, t_aln);
+  print_protein (s_aln, t_aln);*/
 
   return 0;
 }
