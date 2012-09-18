@@ -27,16 +27,22 @@ int get_position(char a) {
   return pos;
 }
 
+int get_length(string blocks[], int pos) {
+  int length = 0;
+  for (int i=0; i<=pos; i++) {
+    length += blocks[i].length();
+  }
+return length;
+}
+
 // Retutns the number of 1's int s.
 int count_ones(string s) {
   int count = 0;
-
   for (int i=0; i<(int)s.size(); i++) {
     if (s[i] == '1') {
       count++;
     }
   }
-
   return count;
 }
 
@@ -50,7 +56,7 @@ int count_ones_y(string blocks[], vector<int> y, int pos) {
 
 int count_ones_x(string blocks[], vector<int> x, int pos) {
 	int count = 0;
-	for (int i=pos; i< (int)x.size(); i++) {
+	for (int i=pos; i<(int)x.size(); i++) {
 		count += count_ones(blocks[x[i]]);
 	}
 	return count;
@@ -155,35 +161,50 @@ int folding_point(string str) {
   if (j < (int)str.length()-1) {
     blocks[iter] = str.substr(hidrophobic_arr[j]+1, str.length() - j);
   }
-
+  for(int i=0; i<iter; i++) {
+    cout<<blocks[i]<<endl;
+  }
   vector<int> x;
 	vector<int> y;
 
   blocks_labeling(blocks, bi, bi_iter, x, y);
-	vector<int>::iterator block_pos;
-	for (int i=0; i<iter; i++) {
-		if ((block_pos = find(y.begin(), y.end(), bi[i])) != y.end()) {
-			int y_pos = block_pos - y.begin();
-			cout<<"y_pos="<<y_pos<<endl;
-			int count_y = count_ones_y(blocks, y, y_pos);
-			if (y_pos < (int)x.size()) {
-				int count_x = count_ones_x(blocks, x, y_pos);
-				int min_ones = min(count_x, count_y);
-				cout<<count_y<<"   "<<count_x<<"  "<<min_ones<<endl;
-			}
-		} else if ((block_pos = find(x.begin(), x.end(), bi[i])) != x.end()) {
-			int x_pos = block_pos - x.begin();
-			if (x_pos != 0) {
-				cout<<"x_pos="<<x_pos<<endl;
-				int count_x = count_ones_x(blocks, x, x_pos+1);
-				if (x_pos < (int)x.size()) {
-					int count_y = count_ones_y(blocks, y, x_pos+1);
-					int min_ones = min(count_x, count_y);
-					cout<<count_y<<"  "<<count_x<<"  "<<min_ones<<endl;
-				}
-			}
-		} else {
-			i++; // the block is formed by only 0's
+	vector<int>::iterator block_pos_x;
+  vector<int>::iterator block_pos_y;
+  int min_ones = count_ones(str);
+  int left_length = 0;
+	for (int i=0; i<bi_iter; i++) {
+		if ((block_pos_y = find(y.begin(), y.end(), bi[i])) != y.end()) {
+			int y_pos = block_pos_y - y.begin();
+      if (y_pos != y.size()-1) {
+        cout<<"y_pos="<<y_pos<<endl;
+        int count_y = count_ones_y(blocks, y, y_pos);
+        if (y_pos < (int)x.size()) {
+          int count_x = count_ones_x(blocks, x, y_pos+1);
+          int new_min_ones = min(count_x, count_y); 
+          cout<<count_y<<"   "<<count_x<<"  "<<min_ones<<endl;
+          if (new_min_ones > min_ones) {
+            min_ones = new_min_ones;
+          } else {
+            return get_length(blocks, bi[i]);
+          }
+        }
+      }
+		} else if ((block_pos_x = find(x.begin(), x.end(), bi[i])) != x.end()) {
+			int x_pos = block_pos_x - x.begin();
+      if (x_pos !=0 ) { 
+        cout<<"x_pos="<<x_pos<<endl;
+        int count_x = count_ones_x(blocks, x, x_pos+1);
+        if (x_pos < (int)x.size()) {
+          int count_y = count_ones_y(blocks, y, x_pos-1);
+          int new_min_ones = min(count_x, count_y);
+          cout<<count_y<<"  "<<count_x<<"  "<<min_ones<<endl;
+          if (new_min_ones > min_ones) {
+            min_ones = new_min_ones;
+          } else {
+            return get_length(blocks, bi[i]);
+          }
+        }
+      }
 		}
 	}
 
@@ -505,13 +526,12 @@ void alignment(string s_org, string t_org, string &s_aln, string &t_aln) {
 
 int main(){
   //string str = "0100101001110101000010";
-  //string str = "00001100100100100100101000000100";
+  string str = "00001100100100100100101000000100";
   //string str = "0100001010011000011010";
   //string str = "010010000001000110101000101100000010000100000000010"; 
-  string str = "11100010100001000000100101010000010";
+  //string str = "11100010100001000000100101010000010";
   int folding_point_pos = folding_point(str);
-	cout<<folding_point_pos<<endl;
-  /*string t = str.substr(0, (size_t)folding_point_pos);
+  string t = str.substr(0, (size_t)folding_point_pos);
   string right = str.substr((size_t)folding_point_pos, str.length());
   string s = reverse(right);
   string t_aln;
@@ -519,9 +539,9 @@ int main(){
   cout<<t<<endl;
   cout<<s<<endl;
   alignment(s, t, s_aln, t_aln);
-  cout<<t_aln<<endl;u
+  cout<<t_aln<<endl;
   cout<<s_aln<<endl;
-  print_protein (s_aln, t_aln);*/
+  print_protein (s_aln, t_aln);
 
   return 0;
 }
