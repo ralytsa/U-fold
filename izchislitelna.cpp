@@ -170,23 +170,22 @@ int folding_point(string str) {
   blocks_labeling(blocks, bi, bi_iter, x, y);
 	vector<int>::iterator block_pos_x;
   vector<int>::iterator block_pos_y;
-  int min_ones = count_ones(str);
+  vector<int> min_ones;
+  vector<int> lengths;
   int left_length = 0;
+
 	for (int i=0; i<bi_iter; i++) {
 		if ((block_pos_y = find(y.begin(), y.end(), bi[i])) != y.end()) {
 			int y_pos = block_pos_y - y.begin();
       if (y_pos != y.size()-1) {
         cout<<"y_pos="<<y_pos<<endl;
         int count_y = count_ones_y(blocks, y, y_pos);
-        if (y_pos < (int)x.size()) {
-          int count_x = count_ones_x(blocks, x, y_pos+1);
-          int new_min_ones = min(count_x, count_y); 
-          cout<<count_y<<"   "<<count_x<<"  "<<min_ones<<endl;
-          if (new_min_ones > min_ones) {
-            min_ones = new_min_ones;
-          } else {
-            return get_length(blocks, bi[i]);
-          }
+        if (i+1 < bi_iter) {
+          int x_pos = find(x.begin(), x.end(), bi[i+1]) - x.begin();
+          int count_x = count_ones_x(blocks, x, x_pos);
+          min_ones.push_back(min(count_x, count_y));
+          lengths.push_back(get_length(blocks, bi[i]));
+          cout<<count_y<<"   "<<count_x<<"  "<<get_length(blocks, bi[i])<<endl;
         }
       }
 		} else if ((block_pos_x = find(x.begin(), x.end(), bi[i])) != x.end()) {
@@ -194,19 +193,24 @@ int folding_point(string str) {
       if (x_pos !=0 ) { 
         cout<<"x_pos="<<x_pos<<endl;
         int count_x = count_ones_x(blocks, x, x_pos+1);
-        if (x_pos < (int)x.size()) {
-          int count_y = count_ones_y(blocks, y, x_pos-1);
-          int new_min_ones = min(count_x, count_y);
-          cout<<count_y<<"  "<<count_x<<"  "<<min_ones<<endl;
-          if (new_min_ones > min_ones) {
-            min_ones = new_min_ones;
-          } else {
-            return get_length(blocks, bi[i]);
-          }
+        if (i+1 < bi_iter) {
+          int y_pos = find(y.begin(), y.end(), bi[i+1]) - y.begin();
+          int count_y = count_ones_y(blocks, y, y_pos);
+          min_ones.push_back(min(count_x, count_y));
+          lengths.push_back(get_length(blocks, bi[i]));
+          cout<<count_y<<"   "<<count_x<<"  "<<get_length(blocks, bi[i])<<endl;
         }
       }
 		}
 	}
+
+int max_pos = max_element(min_ones.begin(),min_ones.end()) - min_ones.begin();
+cout<<max_pos<<endl;
+for(int i=0; i<lengths.size(); i++) {
+  cout<<"min="<<min_ones[i]<<endl;
+  cout<<"length="<<lengths[i]<<endl;
+}
+return lengths[max_pos];
 
   /*int left_length = 0;
   for (int i = 0; i <= iter; i++) {
@@ -526,10 +530,10 @@ void alignment(string s_org, string t_org, string &s_aln, string &t_aln) {
 
 int main(){
   //string str = "0100101001110101000010";
-  string str = "00001100100100100100101000000100";
+  //string str = "00001100100100100100101000000100";
   //string str = "0100001010011000011010";
   //string str = "010010000001000110101000101100000010000100000000010"; 
-  //string str = "11100010100001000000100101010000010";
+  string str = "11100010100001000000100101010000010";
   int folding_point_pos = folding_point(str);
   string t = str.substr(0, (size_t)folding_point_pos);
   string right = str.substr((size_t)folding_point_pos, str.length());
