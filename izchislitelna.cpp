@@ -142,6 +142,7 @@ int folding_point(string str) {
   while (j+1 < pos) {
     if ((hidrophobic_arr[j+1] - hidrophobic_arr[j]) % 2 == 0) {
       int start = hidrophobic_arr[j];
+			// Find the b_i blocks
       while (j+1 < pos && ((hidrophobic_arr[j+1] - hidrophobic_arr[j]) % 2 == 0)) {
         j++;
       }
@@ -158,7 +159,7 @@ int folding_point(string str) {
         bi_iter++;
         iter++;
       }
-      // Here we have only blocks of 0's
+      // Here we have only blocks of 0's - z_i blocks
       if (j < (int)str.length()-1) {
         blocks[iter] = str.substr(hidrophobic_arr[j]+1, hidrophobic_arr[j+1] - hidrophobic_arr[j] - 1); // blokut moje da e prazen, t.e. niama nuli v nego
         iter++;
@@ -179,12 +180,10 @@ int folding_point(string str) {
   if (j < (int)str.length()-1) {
     blocks[iter] = str.substr(hidrophobic_arr[j]+1, str.length() - j);
   }
-  for(int i=0; i<iter; i++) {
-    cout<<blocks[i]<<endl;
-  }
+
+	// Divide the blocks into two cateogies - x-blocks and y-blocks.
   vector<int> x;
 	vector<int> y;
-
   blocks_labeling(blocks, bi, bi_iter, x, y);
 	bool y_is_first;// flag
 	if (x[0] < y[0]) {
@@ -201,71 +200,33 @@ int folding_point(string str) {
 	for (int i=0; i<bi_iter; i++) {
 		if ((block_pos_y = find(y.begin(), y.end(), bi[i])) != y.end()) {
 			int y_pos = block_pos_y - y.begin();
-      cout<<"y_pos="<<y_pos<<endl;
       int count_y = count_ones_y(blocks, y, y_pos);
 			int x_pos = (y_is_first) ? y_pos : (y_pos+1);
       if (x_pos < x.size() && x_pos >= 0) {
         int count_x = count_ones_x(blocks, x, x_pos);
         min_ones.push_back(min(count_x, count_y));
         lengths.push_back(get_length(blocks, bi[i]));
-        cout<<count_y<<"   "<<count_x<<"  "<<get_length(blocks, bi[i])<<endl;
       }
 		} else if ((block_pos_x = find(x.begin(), x.end(), bi[i])) != x.end()) {
 			int x_pos = block_pos_x - x.begin();
 			if (x_pos !=0 ) {
-        cout<<"x_pos="<<x_pos<<endl;
         int count_x = count_ones_x(blocks, x, x_pos+1);
 				int y_pos = (y_is_first) ? x_pos : x_pos-1;
         if (y_pos < y.size() && y_pos >= 0) {
           int count_y = count_ones_y(blocks, y, y_pos);
           min_ones.push_back(min(count_x, count_y));
           lengths.push_back(get_length(blocks, bi[i]));
-          cout<<count_y<<"   "<<count_x<<"  "<<get_length(blocks, bi[i])<<endl;
         }
       }
 		}
 	}
 
-int max_pos = max_element(min_ones.begin(),min_ones.end()) - min_ones.begin();
-cout<<max_pos<<endl;
-for(int i=0; i<lengths.size(); i++) {
-  cout<<"min="<<min_ones[i]<<endl;
-  cout<<"length="<<lengths[i]<<endl;
-}
-return lengths[max_pos];
-
-  /*int left_length = 0;
-  for (int i = 0; i <= iter; i++) {
-    if ((int)blocks[i].length() > 0) {
-      int distance = folding_point_set_difference(blocks, iter+1, i);
-      if (distance > 0) {
-        left_length += (int)blocks[i].length();
-      } else {
-        int old_distance = folding_point_set_difference(blocks, iter+1, i-1);
-        if (abs(distance) < abs(old_distance)) {
-          left_length += (int)blocks[i].length();
-        } else {
-          return left_length;
-        }
-      }
-    }
-  }*/
-
-  return 0;
+	int max_pos = max_element(min_ones.begin(),min_ones.end()) - min_ones.begin();
+	return lengths[max_pos];
 }
 
-void alignment(string s_org, string t_org, string &s_aln, string &t_aln) {
-  int s_starting_zeros = 0;
-  while (s_org[s_starting_zeros] == '0') {
-   s_starting_zeros++;
-  }
-  string s = s_org.substr((size_t)s_starting_zeros, s_org.length());
-  int t_starting_zeros = 0;
-  while (t_org[t_starting_zeros] == '0') {
-   t_starting_zeros++;
-  }
-  string t = t_org.substr((size_t)t_starting_zeros, t_org.length());
-
+void alignment(string s, string t, string &s_aln, string &t_aln) {
+	// Sequence Alignment - if we have a gap in one of the two substring, we add two gaps so that the number of gaps is always with even length
   int n = (int)s.length();
   int m = (int)t.length();
   int D[MAX_SIZE][MAX_SIZE];
@@ -291,6 +252,7 @@ void alignment(string s_org, string t_org, string &s_aln, string &t_aln) {
       D[i][j] = max;
     }
   }
+
   int i = m+1;
   int j = n+1;
   while( i > 1 && j > 1) {
@@ -301,28 +263,45 @@ void alignment(string s_org, string t_org, string &s_aln, string &t_aln) {
     } else if ( (D[i][j] - sim_mat[get_position(s[j-2])][get_position(t[i-2])] == D[i-1][j-1]) && t[i-2] != s[j-2]) {
       if (s[j-2] == '0') {
         s_aln = s[j-2] + s_aln;
-        s_aln = s[j-3] + s_aln;
-        t_aln = "--" + t_aln;
-        j = j-2;
-      } else if (t[i-2] == '0') {
+				t_aln = "-" + t_aln;
+				if (j > 2) {
+					s_aln = s[j-3] + s_aln;
+					t_aln = "-" + t_aln;
+					j--;
+				}
+				j--;
+			} else if (t[i-2] == '0') {
         t_aln = t[i-2] + t_aln;
-        t_aln = t[i-3] + t_aln;
-        s_aln = "--" + s_aln;
-        i = i-2;
-      }
-    } else if ( (D[i][j] - gap_score) == D[i-1][j]) {
-      s_aln = "--" + s_aln;
+				s_aln = "-" + s_aln;
+				if (i > 2) {
+					t_aln = t[i-3] + t_aln;
+					s_aln = "-" + s_aln;
+					i--;
+				}
+				i--;
+			}
+		} else if ( (D[i][j] - gap_score) == D[i-1][j]) {
+      s_aln = "-" + s_aln;
       t_aln = t[i-2] + t_aln;
-      t_aln = t[i-3] + t_aln;
-      i = i-2;
-    } else if ((D[i][j] - gap_score) == D[i][j-1]) {
+			if (i > 2) {
+				t_aln = t[i-3] + t_aln;
+				s_aln = "-" +s_aln;
+				i--;
+			}
+			i--;
+		} else if ((D[i][j] - gap_score) == D[i][j-1]) {
       s_aln = s[j-2] + s_aln;
-      s_aln = s[j-3] + s_aln;
-      t_aln = "--" + t_aln;
-      j = j-2;
+			t_aln = "-" + t_aln;
+			if (j > 2) {
+				s_aln = s[j-3] + s_aln;
+				t_aln = "-" + t_aln;
+				j--;
+			}
+			j--;
     }
   }
 
+ // Fill the rest of the shorter substring with gaps. 
   if (j > 1) {
     while (j > 1) {
       s_aln = s[j-2] + s_aln;
@@ -336,8 +315,8 @@ void alignment(string s_org, string t_org, string &s_aln, string &t_aln) {
       i = i-1;
     }
   }
-  cout<<t_aln<<endl;
-  cout<<s_aln<<endl;
+
+	// Fix alignments where the block of 0 is separated by gaps, or we have 1 surrounded by gaps.
   int ind = 0;
   while (ind < (int) s_aln.length()) {
     if (s_aln[ind] == t_aln[ind]) {
@@ -349,39 +328,28 @@ void alignment(string s_org, string t_org, string &s_aln, string &t_aln) {
         cnt++;
         ind++;
       }
-			if (s_aln[ind] == '0' && t_aln[ind] == '0') {
+			if ((s_aln[ind] == '0' && t_aln[ind] == '0') || (s_aln[ind] == '1' && t_aln[ind] == '1' && s_aln[ind+1] == '-')) {
         int new_ind = ind - cnt;
 				if (new_ind > 0) { 
-					while (t_aln[new_ind] == '-') {
+					while (s_aln[new_ind] == '-') {
 						new_ind--;
 					}
 					new_ind++;
 				}
-        if (t_aln[new_ind] == '0') {
-          s_aln[new_ind] = '0';
-          s_aln[ind] = '-';
-        }
-			} else if (s_aln[ind] == '1' && t_aln[ind] == '1' && s_aln[ind+1] == '-') {
-				int new_ind = ind - cnt;
-				if (new_ind > 0) { 
-					while (t_aln[new_ind] == '-') {
-						new_ind--;
+        if (t_aln[new_ind] == t_aln[ind]) {
+					if (t_aln[ind] == '0' && t_aln[new_ind+1] != '1') {
+						s_aln[new_ind] = t_aln[ind];
+						s_aln[ind] = '-';
 					}
-					new_ind++;
-				}
-        if (t_aln[new_ind] == '1') {
-          s_aln[new_ind] = '1';
-          s_aln[ind] = '-';
         }
 			}
-    }
-    if (t_aln[ind] == '-') {
+    } else if (t_aln[ind] == '-') {
       int cnt = 0;
       while (t_aln[ind] == '-') {
         cnt++;
         ind++;
       }
-			if (t_aln[ind] == '0' && s_aln[ind] == '0' ) {
+			if ((t_aln[ind] == '0' && s_aln[ind] == '0') || (t_aln[ind] == '1' && s_aln[ind] == '1' && t_aln[ind+1] == '-')) {
         int new_ind = ind - cnt;
 				if (new_ind > 0) { 
 					while (t_aln[new_ind] == '-') {
@@ -389,46 +357,13 @@ void alignment(string s_org, string t_org, string &s_aln, string &t_aln) {
 					}
 					new_ind++;
 				}
-        if (s_aln[new_ind] == '0') {
-          t_aln[new_ind] = '0';
-          t_aln[ind] = '-';
-        }
-			} else if(t_aln[ind] == '1' && s_aln[ind] == '1' && t_aln[ind+1] == '-') {
-				int new_ind = ind - cnt;
-				if (new_ind > 0) { 
-					while (t_aln[new_ind] == '-') {
-						new_ind--;
+        if (s_aln[new_ind] == s_aln[ind]) {
+					if (s_aln[ind] == '0' && t_aln[new_ind+1] != '1') {
+						t_aln[new_ind] = s_aln[ind];
+						t_aln[ind] = '-';
 					}
-					new_ind++;
-				}
-
-        if (s_aln[new_ind] == '1') {
-          t_aln[new_ind] = '1';
-          t_aln[ind] = '-';
         }
 			}
-    }
-  }
-
-  if (s_starting_zeros >= t_starting_zeros) {
-    for (int i=0; i<t_starting_zeros; i++) {
-      s_aln = "0" + s_aln;
-      t_aln = "0" + t_aln;
-    }
-    int diff = s_starting_zeros - t_starting_zeros;
-    for (int i=0; i<diff; i++) {
-      s_aln = "0" + s_aln;
-      t_aln = "-" + t_aln;
-    }
-  } else {
-    for (int i=0; i<s_starting_zeros; i++) {
-      s_aln = "0" + s_aln;
-      t_aln = "0" + t_aln;
-    }
-    int diff = t_starting_zeros - s_starting_zeros;
-    for (int i=0; i<diff; i++) {
-      t_aln = "0" + t_aln;
-      s_aln = "-" + s_aln;
     }
   }
 }
@@ -484,7 +419,7 @@ void print_protein (string s, string t) {
 
   int length = (int)s.length() - max(s_ending_gaps, t_ending_gaps);
   for (int i = starting_gaps; i < (int)length; i++) {
-    if (s[i] != '-' && t[i] != '-') {
+		if (s[i] != '-' && t[i] != '-') {
       lattice[pos][j] = t[i];
       lattice[pos+2][j] = s[i];
       if (s[i+1] && t[i+1] && s[i+1] != '-' && t[i+1] != '-') {
@@ -494,6 +429,9 @@ void print_protein (string s, string t) {
       }
       j++;
 		} else if (s[i] == '-') {
+			if (i == starting_gaps) {
+				j--;
+			}
       int cnt = 0;
       while (s[i] == '-') {
 				i++;
@@ -501,15 +439,20 @@ void print_protein (string s, string t) {
       }
       for (int a=1; a<=cnt/2; a++) {
         lattice[pos-2*a][j-1] = t[i-cnt-1+a];
-        lattice[pos-2*a][j+1] = t[i-a];
-        lattice[pos-2*a+1][j-1] = '|';
-        lattice[pos-2*a+1][j+1] = '|';
+        lattice[pos-2*a][j+1] = t[i-a]; 
+				if (i-cnt != starting_gaps) {
+					lattice[pos-2*a+1][j-1] = '|';
+				}
+				lattice[pos-2*a+1][j+1] = '|';
       }
       lattice[pos-cnt][j] = '-';
-      lattice[pos+2][j] = '-';
+			lattice[pos+2][j] = '-';
       j+=1;
       i--;
     } else if(t[i] == '-') {
+			if (i == starting_gaps) {
+				j--;
+			}
       int cnt = 0;
       while (t[i] == '-') {
         i++;
@@ -518,8 +461,10 @@ void print_protein (string s, string t) {
       for (int a=1; a<=cnt/2; a++) {
         lattice[pos + 2*a + 2][j-1] = s[i-cnt-1+a];
         lattice[pos + 2*a + 2 ][j+1] = s[i-a];
-        lattice[pos + 2*a + 1][j-1] = '|';
-        lattice[pos + 2*a + 1][j+1] = '|';
+				if (i-cnt != starting_gaps) {
+					lattice[pos + 2*a + 1][j-1] = '|';
+				}
+				lattice[pos + 2*a + 1][j+1] = '|';
       }
       lattice[pos+2+cnt][j] = '-';
       lattice[pos][j] = '-';
@@ -576,22 +521,27 @@ void print_protein (string s, string t) {
 }
 
 int main(){
-  string str = "0100101001110101000010"; //ok
+	//string str = "0100101001110101000010"; //ok
   //string str = "00001100100100100100101000000100"; //ok
-  //string str = "0100001010011000011010"; //needs little fix
-  //string str = "010010000001000110101000101100000010000100000000010"; //wrong
+  //string str = "0100001010011000011010"; //print issues
+  //string str = "010010000001000110101000101100000010000100000000010"; //print issues
   //string str = "11100010100001000000100101010000010"; //ok
+	//string str = "01001010000010101001000100101010010"; //print issues
+	//string str = "00100011100001001010101010101"; //ok
+	//string str = "0010010100101000100100100000101001011"; - no
+	string str = "1000010101010101011011101010110";
 	int folding_point_pos = folding_point(str);
   string t = str.substr(0, (size_t)folding_point_pos);
   string right = str.substr((size_t)folding_point_pos, str.length());
   string s = reverse(right);
   string t_aln;
   string s_aln;
-  cout<<t<<endl;
-  cout<<s<<endl;
+	cout<<"str = "<<str<<endl;
+  cout<<"t = "<<t<<endl;
+  cout<<"s = "<<s<<endl;
   alignment(s, t, s_aln, t_aln);
-  cout<<t_aln<<endl;
-  cout<<s_aln<<endl;
+	cout<<"t aligned is "<<t_aln<<endl;
+  cout<<"s aligned is "<<s_aln<<endl;
   print_protein (s_aln, t_aln);
 
   return 0;
