@@ -107,7 +107,7 @@ void blocks_labeling(string blocks[], int bi[], int bi_size, vector<int> &x,  ve
 int get_length(string blocks[], int pos) {
   int length = 0;
   for (int i=0; i<=pos; i++) {
-    length += blocks[i].length();
+    length += (int)blocks[i].length();
   }
 return length;
 }
@@ -202,7 +202,7 @@ int folding_point(string str) {
 			int y_pos = block_pos_y - y.begin();
       int count_y = count_ones_y(blocks, y, y_pos);
 			int x_pos = (y_is_first) ? y_pos : (y_pos+1);
-      if (x_pos < x.size() && x_pos >= 0) {
+      if (x_pos < (int)x.size() && x_pos >= 0) {
         int count_x = count_ones_x(blocks, x, x_pos);
         min_ones.push_back(min(count_x, count_y));
         lengths.push_back(get_length(blocks, bi[i]));
@@ -212,7 +212,7 @@ int folding_point(string str) {
 			if (x_pos !=0 ) {
         int count_x = count_ones_x(blocks, x, x_pos+1);
 				int y_pos = (y_is_first) ? x_pos : x_pos-1;
-        if (y_pos < y.size() && y_pos >= 0) {
+        if (y_pos < (int)y.size() && y_pos >= 0) {
           int count_y = count_ones_y(blocks, y, y_pos);
           min_ones.push_back(min(count_x, count_y));
           lengths.push_back(get_length(blocks, bi[i]));
@@ -521,27 +521,28 @@ void print_protein (string s, string t) {
 }
 
 int main(){
-	//string str = "0100101001110101000010"; //ok
-  //string str = "00001100100100100100101000000100"; //ok
-  //string str = "0100001010011000011010"; //print issues
-  //string str = "010010000001000110101000101100000010000100000000010"; //print issues
-  //string str = "11100010100001000000100101010000010"; //ok
-	//string str = "01001010000010101001000100101010010"; //print issues
-	//string str = "00100011100001001010101010101"; //ok
-	//string str = "0010010100101000100100100000101001011"; - no
-	string str = "1000010101010101011011101010110";
-	int folding_point_pos = folding_point(str);
-  string t = str.substr(0, (size_t)folding_point_pos);
-  string right = str.substr((size_t)folding_point_pos, str.length());
+	//string protein = "0100101001110101000010";
+  //string protein = "00001100100100100100101000000100";
+  //string protein = "0100001010011000011010";
+  //string protein = "11100010100001000000100101010000010";
+	//string protein = "00100011100001001010101010101";
+	//string protein = "01001010100100100101111010101";
+
+	string protein = "001010110101101100100010101"; 
+
+	int folding_point_pos = folding_point(protein);
+  string t = protein.substr(0, (size_t)folding_point_pos);
+  string right = protein.substr((size_t)folding_point_pos, protein.length());
   string s = reverse(right);
   string t_aln;
   string s_aln;
-	cout<<"str = "<<str<<endl;
-  cout<<"t = "<<t<<endl;
-  cout<<"s = "<<s<<endl;
+	cout<<"Protein: "<<protein<<endl;
+	cout<<"First substring: "<<t<<endl;
+	cout<<"Second substring (reversed): "<<s<<endl;
   alignment(s, t, s_aln, t_aln);
-	cout<<"t aligned is "<<t_aln<<endl;
-  cout<<"s aligned is "<<s_aln<<endl;
+	cout<<"Alignmen: "<<endl;
+	cout<<t_aln<<endl;
+  cout<<s_aln<<endl;
   print_protein (s_aln, t_aln);
 
   return 0;
